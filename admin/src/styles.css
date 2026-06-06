@@ -26,6 +26,39 @@ textarea {
   min-height: 100vh;
 }
 
+.login-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 20px;
+  background: #eef2f5;
+}
+
+.login-panel {
+  display: grid;
+  gap: 14px;
+  width: min(420px, 100%);
+  padding: 24px;
+  border: 1px solid #d7dee4;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(22, 32, 41, 0.14);
+}
+
+.login-panel h1 {
+  margin: 2px 0 0;
+  font-size: 24px;
+}
+
+.login-panel p {
+  margin: 0;
+  color: #5a6872;
+}
+
+.login-brand {
+  color: #162029;
+}
+
 .sidebar {
   display: flex;
   flex-direction: column;

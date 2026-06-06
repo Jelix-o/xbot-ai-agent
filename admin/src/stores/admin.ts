@@ -17,6 +17,9 @@ import type {
 export const useAdminStore = defineStore("admin", () => {
   const loading = shallowRef(false);
   const error = shallowRef("");
+  const authenticated = shallowRef(false);
+  const authChecked = shallowRef(false);
+  const authUser = shallowRef("");
   const activeUserId = shallowRef("");
   const overview = shallowRef<Overview | null>(null);
   const users = shallowRef<PrivateBotConfig[]>([]);
@@ -42,9 +45,64 @@ export const useAdminStore = defineStore("admin", () => {
     keywords: "",
     enabled: true,
   });
+  const loginForm = reactive({
+    username: "admin",
+    password: "",
+  });
 
   const activeUser = computed(() => users.value.find((user) => user.userId === activeUserId.value) ?? users.value[0]);
   const pendingCandidates = computed(() => candidates.value.filter((candidate) => candidate.status === "pending"));
+
+  async function checkSession(): Promise<void> {
+    try {
+      const data = await api<{ authenticated: boolean; username?: string }>("/api/session");
+      authenticated.value = data.authenticated;
+      authUser.value = data.username ?? "";
+      if (authenticated.value) await loadAll();
+    } catch {
+      authenticated.value = false;
+      authUser.value = "";
+    } finally {
+      authChecked.value = true;
+    }
+  }
+
+  async function login(): Promise<void> {
+    loading.value = true;
+    error.value = "";
+    try {
+      const data = await api<{ ok: boolean; username: string }>("/api/login", jsonOptions("POST", {
+        username: loginForm.username.trim(),
+        password: loginForm.password,
+      }));
+      authenticated.value = data.ok;
+      authUser.value = data.username;
+      loginForm.password = "";
+      await loadAll();
+    } catch {
+      error.value = "登录失败，请检查用户名和密码。";
+      authenticated.value = false;
+    } finally {
+      loading.value = false;
+      authChecked.value = true;
+    }
+  }
+
+  async function logout(): Promise<void> {
+    await api<{ ok: boolean }>("/api/logout", jsonOptions("POST", {}));
+    authenticated.value = false;
+    authUser.value = "";
+    overview.value = null;
+    users.value = [];
+    skills.value = [];
+    memories.value = [];
+    candidates.value = [];
+    knowledge.value = [];
+    reminders.value = [];
+    logs.value = [];
+    systemSettings.value = null;
+    health.value = null;
+  }
 
   async function loadAll(): Promise<void> {
     loading.value = true;
@@ -188,6 +246,9 @@ export const useAdminStore = defineStore("admin", () => {
   return {
     loading,
     error,
+    authenticated,
+    authChecked,
+    authUser,
     activeUserId,
     activeUser,
     overview,
@@ -203,6 +264,10 @@ export const useAdminStore = defineStore("admin", () => {
     health,
     userForm,
     knowledgeForm,
+    loginForm,
+    checkSession,
+    login,
+    logout,
     loadAll,
     loadUserScoped,
     saveUser,

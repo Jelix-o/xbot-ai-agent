@@ -1,3 +1,4 @@
+import { createHmac, randomBytes } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
@@ -18,6 +19,7 @@ interface AdminHttpServerOptions {
   port: number;
   username: string;
   password: string;
+  sessionSecret: string;
   userConfigService: UserConfigService;
   skillService: SkillService;
   personalMemoryStore: PersonalMemoryStore;
@@ -30,6 +32,8 @@ interface AdminHttpServerOptions {
 }
 
 export class AdminHttpServer {
+  private readonly sessions = new Map<string, { username: string; expiresAt: number }>();
+
   private readonly server = createServer((req, res) => {
     void this.handle(req, res).catch((error) => {
       this.sendJson(res, { error: (error as Error).message }, 500);
@@ -55,7 +59,11 @@ export class AdminHttpServer {
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
     if (url.pathname.startsWith("/api/")) {
-      if (!this.isAuthorized(req)) {
+      if (url.pathname === "/api/login" || url.pathname === "/api/logout" || url.pathname === "/api/session") {
+        await this.handleAuthApi(req, res, url);
+        return;
+      }
+      if (!this.isAuthorized(req).ok) {
         this.sendJson(res, { error: "unauthorized" }, 401);
         return;
       }
@@ -63,6 +71,36 @@ export class AdminHttpServer {
       return;
     }
     await this.serveStatic(res, url.pathname);
+  }
+
+  private async handleAuthApi(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
+    const method = req.method ?? "GET";
+    if (method === "POST" && url.pathname === "/api/login") {
+      const body = await readBody(req);
+      const username = typeof body.username === "string" ? body.username.trim() : "";
+      const password = typeof body.password === "string" ? body.password : "";
+      if (username !== this.options.username || password !== this.options.password) {
+        this.sendJson(res, { error: "invalid_credentials" }, 401);
+        return;
+      }
+      const token = this.createSession(username);
+      res.setHeader("Set-Cookie", buildSessionCookie(token, req, 7 * 24 * 60 * 60));
+      this.sendJson(res, { ok: true, username });
+      return;
+    }
+    if (method === "POST" && url.pathname === "/api/logout") {
+      const token = this.getSessionToken(req);
+      if (token) this.sessions.delete(hashToken(token, this.options.sessionSecret));
+      res.setHeader("Set-Cookie", buildSessionCookie("", req, 0));
+      this.sendJson(res, { ok: true });
+      return;
+    }
+    if (method === "GET" && url.pathname === "/api/session") {
+      const auth = this.isAuthorized(req);
+      this.sendJson(res, { authenticated: auth.ok, username: auth.username });
+      return;
+    }
+    this.sendJson(res, { error: "not_found" }, 404);
   }
 
   private async handleApi(req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> {
@@ -232,14 +270,39 @@ export class AdminHttpServer {
     this.sendJson(res, { error: "not_found" }, 404);
   }
 
-  private isAuthorized(req: IncomingMessage): boolean {
+  private isAuthorized(req: IncomingMessage): { ok: boolean; username?: string } {
+    const token = this.getSessionToken(req);
+    if (token) {
+      const key = hashToken(token, this.options.sessionSecret);
+      const session = this.sessions.get(key);
+      if (session && session.expiresAt > Date.now()) {
+        return { ok: true, username: session.username };
+      }
+      this.sessions.delete(key);
+    }
     const auth = req.headers.authorization;
-    if (!auth?.startsWith("Basic ")) return false;
+    if (!auth?.startsWith("Basic ")) return { ok: false };
     const decoded = Buffer.from(auth.slice("Basic ".length), "base64").toString("utf8");
     const separator = decoded.indexOf(":");
     const username = decoded.slice(0, separator);
     const password = decoded.slice(separator + 1);
-    return username === this.options.username && password === this.options.password;
+    return username === this.options.username && password === this.options.password
+      ? { ok: true, username }
+      : { ok: false };
+  }
+
+  private createSession(username: string): string {
+    const token = randomBytes(32).toString("base64url");
+    this.sessions.set(hashToken(token, this.options.sessionSecret), {
+      username,
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    });
+    return token;
+  }
+
+  private getSessionToken(req: IncomingMessage): string | undefined {
+    const cookies = parseCookies(req.headers.cookie);
+    return cookies.xbot_admin_session;
   }
 
   private async serveStatic(res: ServerResponse, pathname: string): Promise<void> {
@@ -264,6 +327,35 @@ export class AdminHttpServer {
     res.end(JSON.stringify(body));
   }
 }
+
+function parseCookies(header: string | undefined): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const item of (header ?? "").split(";")) {
+    const separator = item.indexOf("=");
+    if (separator <= 0) continue;
+    const name = item.slice(0, separator).trim();
+    const value = item.slice(separator + 1).trim();
+    if (name) result[name] = decodeURIComponent(value);
+  }
+  return result;
+}
+
+function buildSessionCookie(token: string, req: IncomingMessage, maxAgeSeconds: number): string {
+  const secure = (req.headers["x-forwarded-proto"] ?? "").toString().includes("https");
+  return [
+    `xbot_admin_session=${encodeURIComponent(token)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${maxAgeSeconds}`,
+    secure ? "Secure" : "",
+  ].filter(Boolean).join("; ");
+}
+
+function hashToken(token: string, secret: string): string {
+  return createHmac("sha256", secret).update(token).digest("base64url");
+}
+
 
 async function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];

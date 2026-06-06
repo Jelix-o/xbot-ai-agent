@@ -171,6 +171,7 @@ function createAdminServer(
     port: config.adminHttpPort,
     username: config.adminUsername,
     password: config.adminPassword,
+    sessionSecret: config.adminSessionSecret,
     userConfigService,
     skillService,
     personalMemoryStore,

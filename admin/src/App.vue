@@ -7,6 +7,9 @@ const admin = useAdminStore();
 const {
   loading,
   error,
+  authenticated,
+  authChecked,
+  authUser,
   activeUserId,
   activeUser,
   overview,
@@ -22,6 +25,7 @@ const {
   health,
   userForm,
   knowledgeForm,
+  loginForm,
 } = storeToRefs(admin);
 
 const activeAllowedSkillText = computed(() => activeUser.value?.allowedSkillIds.join(", ") ?? "");
@@ -32,7 +36,7 @@ const systemModels = computed(() => systemSettings.value?.models ?? []);
 const operationLogs = computed(() => logs.value.slice(0, 8));
 
 onMounted(() => {
-  void admin.loadAll();
+  void admin.checkSession();
 });
 
 async function selectUser(userId: string): Promise<void> {
@@ -42,7 +46,37 @@ async function selectUser(userId: string): Promise<void> {
 </script>
 
 <template>
-  <main class="admin-shell">
+  <main v-if="!authChecked" class="login-shell">
+    <section class="login-panel">
+      <strong>XBot</strong>
+      <p>Loading admin console...</p>
+    </section>
+  </main>
+
+  <main v-else-if="!authenticated" class="login-shell">
+    <form class="login-panel" @submit.prevent="admin.login">
+      <div class="brand login-brand">
+        <strong>XBot</strong>
+        <span>v1.1.0</span>
+      </div>
+      <h1>Admin Login</h1>
+      <p>Sign in to manage private Agent users, memory, models, and health.</p>
+      <label>
+        Username
+        <input v-model="loginForm.username" class="input" autocomplete="username" />
+      </label>
+      <label>
+        Password
+        <input v-model="loginForm.password" class="input" type="password" autocomplete="current-password" />
+      </label>
+      <p v-if="error" class="alert">{{ error }}</p>
+      <button class="btn" type="submit" :disabled="loading || !loginForm.username.trim() || !loginForm.password">
+        {{ loading ? "Signing in..." : "Sign in" }}
+      </button>
+    </form>
+  </main>
+
+  <main v-else class="admin-shell">
     <aside class="sidebar">
       <div class="brand">
         <strong>XBot</strong>
@@ -78,11 +112,14 @@ async function selectUser(userId: string): Promise<void> {
       <header class="topbar">
         <div>
           <h1>Private Agent Console</h1>
-          <p v-if="activeUser">Active user {{ activeUser.displayName || activeUser.userId }} · {{ activeSkillName }}</p>
+          <p v-if="activeUser">Signed in as {{ authUser }} · Active user {{ activeUser.displayName || activeUser.userId }} · {{ activeSkillName }}</p>
         </div>
-        <button class="ghost-btn" type="button" :disabled="loading" @click="admin.loadAll">
-          {{ loading ? "Refreshing..." : "Refresh" }}
-        </button>
+        <div class="actions">
+          <button class="ghost-btn" type="button" :disabled="loading" @click="admin.loadAll">
+            {{ loading ? "Refreshing..." : "Refresh" }}
+          </button>
+          <button class="ghost-btn danger" type="button" @click="admin.logout">Logout</button>
+        </div>
       </header>
 
       <p v-if="error" class="alert">{{ error }}</p>
