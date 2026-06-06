@@ -1,4 +1,4 @@
-# XBot v1.1.0 Parallel Deployment
+# XBot v1.2.0 Parallel Deployment
 
 Target layout:
 
@@ -39,3 +39,7 @@ sudo systemctl status xbot.service --no-pager
 NapCat must add a separate reverse WebSocket connection to `ws://host.docker.internal:6299/onebot/ws` or the equivalent host address. Keep the existing AI-Project reverse connection unchanged.
 
 The deploy script preserves server-only `.env`, `data/`, and `config/users.json`. Use `config/users.example.json` only as a first-time template.
+
+## v1.2.0 Notes
+
+`v1.2.0` replaces the earlier standalone XBot admin page with a UBot-style multi-page admin console adapted for QQ private-chat users. The deployment still runs beside AI-Project and preserves the same XBot ports.

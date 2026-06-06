@@ -1,17 +1,18 @@
-import { fileURLToPath, URL } from "node:url";
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: fileURLToPath(new URL(".", import.meta.url)),
+  root: __dirname,
   plugins: [vue()],
-  resolve: {
-    alias: {
-      "@": fileURLToPath(new URL("./src", import.meta.url)),
-    },
-  },
   build: {
-    outDir: "dist",
+    outDir: "../dist/admin",
     emptyOutDir: true,
+    target: "es2022",
+  },
+  server: {
+    port: 5178,
+    proxy: {
+      "/api": "http://127.0.0.1:6300",
+    },
   },
 });

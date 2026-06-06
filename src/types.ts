@@ -81,7 +81,7 @@ export interface PrivateBotConfig {
 }
 
 export type ScheduleDateRule = "all" | "workday" | "holiday" | "custom";
-export type SystemModelPurpose = "reply" | "memory" | "tts" | "custom";
+export type SystemModelPurpose = "reply" | "profile" | "memory" | "dedup" | "summary" | "knowledge" | "tts" | "custom";
 
 export interface UsersConfigFile {
   superAdminUserIds?: string[];
@@ -229,8 +229,29 @@ export interface SystemModelConfig {
 }
 
 export interface SystemSettings {
+  profileSummaryMaxChars?: number;
+  profileShortSummaryMaxChars?: number;
+  dailyProfileReviewEnabled?: boolean;
+  dailyProfileReviewTime?: string;
+  memoryDedupEnabled?: boolean;
+  memoryDedupTime?: string;
+  adminSecretConfigured?: boolean;
+  groupAdminSecretConfigured?: boolean;
+  defaultTriggerKeywords?: Array<{ keyword: string; enabled: boolean }>;
   models: SystemModelConfig[];
   selectedModelIds: Partial<Record<SystemModelPurpose, string>>;
+  commands?: SystemCommandConfig[];
+  updatedAt: string;
+}
+
+export interface SystemCommandConfig {
+  id: string;
+  title: string;
+  primary: string;
+  aliases: string[];
+  permission: "member" | "group_admin" | "super_admin";
+  enabled: boolean;
+  help: string;
   updatedAt: string;
 }
 

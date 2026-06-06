@@ -2,7 +2,7 @@ param(
   [string]$HostName = "ubuntu@43.213.52.97",
   [string]$KeyPath = "$HOME\.ssh\jelix.pem",
   [string]$RemoteDir = "/opt/xbot",
-  [string]$Version = "1.1.0"
+  [string]$Version = "1.2.0"
 )
 
 $ErrorActionPreference = "Stop"

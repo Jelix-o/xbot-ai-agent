@@ -70,6 +70,10 @@ export class PersonalReminderService {
     return Object.values((await this.read()).tasks).filter((task) => task.userId === userId);
   }
 
+  async listAllTasks(): Promise<PersonalReminderTask[]> {
+    return Object.values((await this.read()).tasks);
+  }
+
   async removeUserTask(userId: string, taskId: string): Promise<boolean> {
     const data = await this.read();
     const task = data.tasks[taskId];
@@ -89,6 +93,33 @@ export class PersonalReminderService {
     }
     await this.write(data);
     return task;
+  }
+
+  async updateUserTask(userId: string, taskId: string, patch: Partial<PersonalReminderTask>, now = new Date()): Promise<PersonalReminderTask | undefined> {
+    const data = await this.read();
+    const current = data.tasks[taskId];
+    if (!current || current.userId !== userId) return undefined;
+    const intervalMinutes = clampMinutes(Number(patch.executionIntervalMinutes ?? patch.intervalMinutes ?? current.intervalMinutes)) ?? current.intervalMinutes;
+    const next: PersonalReminderTask = {
+      ...current,
+      ...patch,
+      id: current.id,
+      userId,
+      creatorUserId: current.creatorUserId,
+      intervalMinutes,
+      executionStartTime: normalizeTime(patch.executionStartTime) ?? current.executionStartTime,
+      executionEndTime: normalizeTime(patch.executionEndTime) ?? current.executionEndTime,
+      executionIntervalMinutes: patch.executionIntervalMinutes ? intervalMinutes : current.executionIntervalMinutes,
+      dateRule: normalizeDateRule(patch.dateRule ?? current.dateRule),
+      weekdays: normalizeWeekdays(patch.weekdays ?? current.weekdays),
+      enabled: patch.enabled !== undefined ? patch.enabled !== false : current.enabled,
+    };
+    if (next.enabled) {
+      next.nextRunAt = calculateNextRunAt({ now, ...next }).toISOString();
+    }
+    data.tasks[taskId] = next;
+    await this.write(data);
+    return next;
   }
 
   async getDueTasks(now = new Date()): Promise<PersonalReminderTask[]> {

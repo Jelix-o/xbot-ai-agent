@@ -1,6 +1,6 @@
 # XBot
 
-XBot v1.1.0 is a QQ private-chat Agent Skills bot based on `NapCat + OneBot + Node.js + TypeScript`.
+XBot v1.2.0 is a QQ private-chat Agent Skills bot based on `NapCat + OneBot + Node.js + TypeScript`.
 
 It is designed for one-to-one QQ private chat:
 
@@ -8,7 +8,7 @@ It is designed for one-to-one QQ private chat:
 - each user has isolated conversation context, current skill, model mode, memories, knowledge entries, and reminders
 - super admins invite, disable, and remove users
 - high-confidence personal memories are approved automatically, while low-confidence candidates stay reviewable in the admin console
-- V1.1.0 adds smart personal reminder windows, model governance, system health checks, knowledge CRUD, and richer operation logs
+- V1.2.0 rebuilds the admin console from the UBot multi-page UI while adapting all management data to private-user scope
 - deployment is intended to run in parallel with the old group bot on separate ports
 
 ## Commands

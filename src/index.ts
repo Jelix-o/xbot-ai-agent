@@ -169,6 +169,7 @@ function createAdminServer(
   return new AdminHttpServer({
     host: config.adminHttpHost,
     port: config.adminHttpPort,
+    publicBaseUrl: config.adminPublicBaseUrl,
     username: config.adminUsername,
     password: config.adminPassword,
     sessionSecret: config.adminSessionSecret,

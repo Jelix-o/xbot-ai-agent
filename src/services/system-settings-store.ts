@@ -82,6 +82,16 @@ function normalizeSettings(
   return {
     models,
     selectedModelIds: normalizeSelectedModelIds(value.selectedModelIds, models),
+    profileSummaryMaxChars: typeof value.profileSummaryMaxChars === "number" ? value.profileSummaryMaxChars : 1800,
+    profileShortSummaryMaxChars: typeof value.profileShortSummaryMaxChars === "number" ? value.profileShortSummaryMaxChars : 140,
+    dailyProfileReviewEnabled: value.dailyProfileReviewEnabled !== false,
+    dailyProfileReviewTime: typeof value.dailyProfileReviewTime === "string" ? value.dailyProfileReviewTime : "00:00",
+    memoryDedupEnabled: value.memoryDedupEnabled !== false,
+    memoryDedupTime: typeof value.memoryDedupTime === "string" ? value.memoryDedupTime : "23:00",
+    adminSecretConfigured: value.adminSecretConfigured === true,
+    groupAdminSecretConfigured: value.groupAdminSecretConfigured === true,
+    defaultTriggerKeywords: Array.isArray(value.defaultTriggerKeywords) ? value.defaultTriggerKeywords : [{ keyword: "XBot", enabled: true }],
+    commands: Array.isArray(value.commands) ? value.commands : defaultCommands(),
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
   };
 }
@@ -168,10 +178,32 @@ function cloneSettings(settings: SystemSettings): SystemSettings {
 }
 
 function normalizePurpose(value: unknown): SystemModelPurpose {
-  return value === "reply" || value === "memory" || value === "tts" || value === "custom" ? value : "custom";
+  return value === "reply" ||
+    value === "profile" ||
+    value === "memory" ||
+    value === "dedup" ||
+    value === "summary" ||
+    value === "knowledge" ||
+    value === "tts" ||
+    value === "custom"
+    ? value
+    : "custom";
 }
 
 function normalizeModelId(value: string): string {
   const text = value.trim();
   return /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$/.test(text) ? text : "";
+}
+
+function defaultCommands(): NonNullable<SystemSettings["commands"]> {
+  const now = new Date().toISOString();
+  return [
+    { id: "help", title: "帮助", primary: "#帮助", aliases: ["#功能", "#命令"], permission: "member", enabled: true, help: "查看私聊 Agent 可用命令。", updatedAt: now },
+    { id: "skill", title: "技能", primary: "#技能", aliases: [], permission: "member", enabled: true, help: "查看或切换当前私聊技能。", updatedAt: now },
+    { id: "conversation", title: "上下文", primary: "#对话", aliases: [], permission: "member", enabled: true, help: "清空个人私聊上下文。", updatedAt: now },
+    { id: "memory", title: "记忆", primary: "#记忆", aliases: [], permission: "member", enabled: true, help: "查看个人记忆状态。", updatedAt: now },
+    { id: "profile", title: "画像", primary: "#画像", aliases: [], permission: "member", enabled: true, help: "生成个人画像总结。", updatedAt: now },
+    { id: "reminder", title: "定时任务", primary: "#定时任务", aliases: ["#提醒"], permission: "member", enabled: true, help: "管理个人私聊提醒。", updatedAt: now },
+    { id: "user", title: "用户开通", primary: "#用户", aliases: [], permission: "super_admin", enabled: true, help: "超级管理员开通私聊用户。", updatedAt: now },
+  ];
 }

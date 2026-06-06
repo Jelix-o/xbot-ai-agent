@@ -1,4 +1,4 @@
-# XBot v1.1.0 Commands
+# XBot v1.2.0 Commands
 
 All commands are handled in QQ private chat.
 
