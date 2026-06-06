@@ -37,6 +37,6 @@ tar --exclude="config/users.json" --exclude="release/*.tar.gz" -czf $packagePath
 scp -i $KeyPath $packagePath "${HostName}:/tmp/xbot-v$Version.tar.gz"
 ssh -i $KeyPath $HostName "mkdir -p $RemoteDir && tar -xzf /tmp/xbot-v$Version.tar.gz -C $RemoteDir && cd $RemoteDir && npm ci --omit=dev"
 
-Write-Host "Uploaded XBot to $HostName:$RemoteDir"
+Write-Host "Uploaded XBot to ${HostName}:${RemoteDir}"
 Write-Host "Server .env, data/, and config/users.json are preserved by the package."
 Write-Host "Install release/xbot.service as /etc/systemd/system/xbot.service after .env is configured."
