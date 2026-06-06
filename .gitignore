@@ -1,0 +1,9 @@
+node_modules/
+dist/
+admin/dist/
+.env
+data/
+.tmp/
+config/users.json
+release/*.tar.gz
+npm-debug.log*

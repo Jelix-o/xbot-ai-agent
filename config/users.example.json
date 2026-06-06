@@ -1,0 +1,27 @@
+{
+  "superAdminUserIds": [
+    "123456789"
+  ],
+  "users": [
+    {
+      "userId": "123456789",
+      "displayName": "Owner",
+      "enabled": true,
+      "currentSkillId": "itexpert",
+      "allowedSkillIds": [
+        "itexpert",
+        "leijun",
+        "jackma",
+        "zxp"
+      ],
+      "replyModelMode": "default",
+      "voiceReplyEnabled": true,
+      "autoReplyEnabled": true,
+      "scheduledRemindersEnabled": true,
+      "dailyDigestEnabled": false,
+      "holidayCountdownEnabled": false,
+      "memoryEnabled": true,
+      "knowledgeEnabled": true
+    }
+  ]
+}

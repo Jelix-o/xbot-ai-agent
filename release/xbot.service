@@ -1,0 +1,17 @@
+[Unit]
+Description=XBot private QQ Agent service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/xbot
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /opt/xbot/dist/index.js
+Restart=always
+RestartSec=5
+User=ubuntu
+Group=ubuntu
+
+[Install]
+WantedBy=multi-user.target
